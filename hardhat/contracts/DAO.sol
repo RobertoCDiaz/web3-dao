@@ -153,6 +153,19 @@ contract DAO is Ownable {
         // At this point, we have everything we neet. So, purchase the NFT through the NFT Marketplace.
         nftMarketPlace.purchase{value: nftPrice}(p.nftTokenId);
     }
+
+    /**
+        @dev Allows the owner of the DAO Contract to withdraw the Ether in the contract.
+     */
+    function withdrawEther() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+
+    // Normally, contract addresses cannot accept ETH sent to them, unless it was through a payable function. But we don't want users to call functions just to deposit money, they should be able to tranfer ETH directly from their wallet. For that, let's add these two functions:
+    receive() external payable {}
+
+    fallback() external payable {}
 }
 
 // Fake NFT Marketplace Contract interface.
