@@ -7,11 +7,11 @@ contract FakeNFTMarketplace {
     mapping(uint256 => address) tokens;
 
     // sets the purchase price for an NFT
-    uint256 price = 0.01 ether;
+    uint256 price = 0.001 ether;
 
     // purchases the NFT with `tokenId` id.
     function purchase(uint256 tokenId) external payable {
-        require(msg.value == price, "This token costs 0.01 ether");
+        require(msg.value == price, "This token costs 0.001 ether");
         
         tokens[tokenId] = msg.sender;
     }
