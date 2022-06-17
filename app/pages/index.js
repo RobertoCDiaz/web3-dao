@@ -23,7 +23,7 @@ export default function Home() {
   const [isCreatingProposal, setIsCreatingProposal] = useState(false);
   // list of the DAO's proposals 
   const [proposals, setProposals] = useState([]);
-
+  // number input containing the new proposed NFT token id for purchase
   const tokenIdInput = useRef();
 
   const [isWalletConnected, setIsWalletConnected] = useState(false); 
@@ -35,32 +35,95 @@ export default function Home() {
    * the value set in the `tokenIdInput` ref.
    */
   const createProposal = async () => {
-    const tokenId = parseInt(tokenIdInput.current.value);
+    try {
+      const tokenId = parseInt(tokenIdInput.current.value);
 
-    const contract = await getContractInstance(web3Modal.current, true);
-    
-    const tx = await contract.createProposal(tokenId);
+      const contract = await getContractInstance(web3Modal.current, true);
+      
+      const tx = await contract.createProposal(tokenId);
 
-    setIsLoading(true);
-    await tx.wait();
-    setIsLoading(false);
-    setIsCreatingProposal(false);
+      setIsLoading(true);
+      await tx.wait();
+      setIsLoading(false);
+      setIsCreatingProposal(false);
 
-    alert("Proposal successfully created!")
+      await updateAppState();
+      
+      alert("Proposal successfully created!")
+    } catch(err) {
+      alert("An error ocurred, consult the console of your browser for more information");
+      console.error(err);
+    }
+  }
 
-    await updateAppState();
+  /**
+   * Calls an instance of the DAO contract to execute a given proposal.
+   * 
+   * @param {int} proposalId - Id of the proposal to execute.
+   */
+  const executeProposal = async (proposalId) => {
+    try {
+      const contract = await getContractInstance(web3Modal.current, true);
+
+      const tx = await contract.executeProposal(proposalId);
+
+      setIsLoading(true);
+      await tx.wait();
+      setIsLoading(false);
+
+      alert("Proposal was correctly executed!");
+
+      updateAppState();
+    } catch(err) {
+      alert("An error ocurred, consult the console of your browser for more information");
+      console.error(err);
+    }
+  }
+
+  /**
+   * Votes on a proposal.
+   * 
+   * @param {number} proposalId - Id of the proposal to vote on.
+   * @param {number} vote - Value of the vote to submit.
+   */
+  const voteOnProposal = async (proposalId, vote) => {
+    try {
+      const contract = await getContractInstance(web3Modal.current, true);
+
+      const parsedVote = vote === "YAY" ? 0 : 1;
+
+      const tx = await contract.voteOnProposal(proposalId, parsedVote);
+
+      setIsLoading(true);
+      await tx.wait();
+      setIsLoading(false);
+
+      await updateAppState();
+
+      alert(`Successfully submitted your '${vote}' vote(s)!`);
+    } catch (err) {
+      alert("An error ocurred, consult the console of your browser for more information");
+      console.error(err);
+    }
   }
 
   /**
    * Withdraws all the Ether the DAO's treasury has and transfers it to the owner.
    */
   const withdraw = async () => {
-    const contract = await getContractInstance(web3Modal.current, true);
+    try {
+      const contract = await getContractInstance(web3Modal.current, true);
 
-    const tx = await contract.withdrawEther();
-    await tx.wait();
+      const tx = await contract.withdrawEther();
+      await tx.wait();
 
-    alert("Successfully withdrawed all the ether of the contract!")
+      await updateAppState();
+
+      alert("Successfully withdrawed all the ether of the contract!")
+    } catch(err) {
+      alert("An error ocurred, consult the console of your browser for more information");
+      console.error(err);
+    }
   }
 
   /**
@@ -72,6 +135,7 @@ export default function Home() {
   
       setIsWalletConnected(true);
     } catch(err) {
+      alert("An error ocurred, consult the console of your browser for more information");
       console.error(err);
     }
   }
@@ -136,40 +200,77 @@ export default function Home() {
 
   useEffect(() => {
     initialProcessing();
+
+    // update app's state every minute
+    setInterval(async () => {
+      await updateAppState();
+    }, 1000 * 60);
   }, [isWalletConnected]);
 
-  const Proposal = (proposal) => {
+  /**
+   * Renders a proposal and it's options based on the given proposal state.
+   * 
+   * @prop `proposalId` - Id of the proposal to show. It must match the id inside the contract.
+   * @prop `proposal` - Proposal object.
+   * @returns Proposal component.
+   */
+  const Proposal = ({proposalId, proposal}) => {
+    const tokenId = proposal.nftTokenId.toNumber();
+
     const deadlineDate = new Date(proposal.deadline.toNumber() * 1000)
     const deadlineExpired =  deadlineDate < Date.now();
+    const executed = proposal.executed;
 
-    return <div className={styles.proposal}>
-      <h3>Token #{ proposal.nftTokenId.toNumber() }</h3>
-      
-      <div className={styles.section}>
-        <p>Votes</p>
-        <div className={styles.votes}>
-          <p className={styles.yays}>{ proposal.yays.toNumber() }</p>
-          <p className={styles.nays}>{ proposal.nays.toNumber() }</p>
-        </div>
+    const passed = proposal.yays > proposal.nays;
+
+    const headerStateStyles = 
+      !deadlineExpired ? styles.active :
+      (executed && passed) ? styles.passed :
+      (executed && !passed) ? styles.declined :
+      "";
+
+    console.log(`p with tokenid ${tokenId} header styles is ${headerStateStyles}`)
+
+    return <div className={styles.proposal} title={deadlineExpired && `This proposal's voting time limit was ${deadlineDate.toLocaleString()}`}>
+      <div className={`${styles.header} ${headerStateStyles}`}>
+        { !deadlineExpired && <i>Ongoing proposal</i> }
+        { deadlineExpired && !executed && <i>Waiting for execution</i> }
+        { executed && <i>Executed proposal</i> }
+        <h3>Token #{ tokenId }</h3>
       </div>
 
-      <div className={styles.section}>
-        {/* show vote buttons if deadline has not expired yet */}
-        { true && <div className={styles.proposalOptions}>
-          <div className={styles.button}>Vote YAY</div>
-          <div className={styles.button}>Vote NAY</div>
-        </div> }
 
-        {/* If deadline has expired but proposal has not been executed yet, show a button to execute */}
-        { deadlineExpired && !proposal.executed && <div className={styles.proposalOptions}>
-          <div className={styles.button}>Create proposal</div>
-        </div> }
+      <div className={styles.content}>
+        {/* Show proposal current vote count */}
+        <div className={styles.section}>
+          <p>Proposal votes:</p>
+          <div className={styles.votes}>
+            <p className={styles.yays}>{ `${proposal.yays.toNumber()} Yays` }</p>
+            <p className={styles.nays}>{ `${proposal.nays.toNumber()} Nays` }</p>
+          </div>
+        </div>
 
-        {/* if proposal is active, show votes options */}
-        {/* if already executed, show the outcome */}
-        { proposal.executed && <div>
-          <p>This proposal was { proposal.yays > proposal.nays ? "passed" : "declined" }</p>
-        </div> }
+        {/* Show deadline only if it has not been exceeded yet */}
+        { !deadlineExpired && <p>Deadline: { deadlineDate.toLocaleString() }</p>}
+
+        <div className={styles.section}>
+          {/* show vote buttons if deadline has not expired yet */}
+          { !deadlineExpired && <div className={styles.proposalOptions}>
+            <div onClick={() => voteOnProposal(proposalId, "YAY")} className={`${styles.button} ${styles.yay}`}>Vote YAY</div>
+            <div onClick={() => voteOnProposal(proposalId, "NAY")} className={`${styles.button} ${styles.nay}`}>Vote NAY</div>
+          </div> }
+
+          {/* If deadline has expired but proposal has not been executed yet, show a button to execute */}
+          { deadlineExpired && !proposal.executed && <div className={styles.proposalOptions}>
+            <div onClick={() => executeProposal(proposalId)} className={styles.button}>Execute proposal</div>
+          </div> }
+
+          {/* if proposal is active, show votes options */}
+          {/* if already executed, show the outcome */}
+          { proposal.executed && <div>
+            <p style={{ color: passed ? "green" : "red" }}>This proposal was { passed ? "passed" : "declined" }</p>
+          </div> }
+        </div>
       </div>
     </div>
   }
@@ -180,8 +281,20 @@ export default function Home() {
    * @returns ProposalsList component.
    */
   const ProposalsList = () => {
+    if (isLoading) {
+      return <div>
+        Loading...
+      </div>
+    }
+
+    if (proposals.length === 0) {
+      return <div>
+        There are still no proposals made in this DAO
+      </div>
+    }
+
     return <div className={styles.proposalsList}>
-      { proposals.map(p => Proposal(p)) }
+      { proposals.map((p, id) => <Proposal key={id} proposalId={id} proposal={p} />) }
     </div>;
   }
 
@@ -277,9 +390,9 @@ export default function Home() {
             {/* <div style={{ display: 'flex', flexDirection: 'row', columnGap: '.5em', alignItems: 'center' }}> */}
             <h2>Proposals</h2>
             {/* </div> */}
-            { !isCreatingProposal && InfoButton("Create proposal", handleCreateProposalOnClick, null, { alignSelf: "flex-start" }) }
             { isCreatingProposal && <CreateProposalForm />}
             { !isCreatingProposal && <ProposalsList />}
+            { !isCreatingProposal && !isLoading && InfoButton("Create proposal", handleCreateProposalOnClick, null, { alignSelf: "flex-start" }) }
             
           </div>
           <UserPanel />

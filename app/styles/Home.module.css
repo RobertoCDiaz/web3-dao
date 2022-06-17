@@ -90,26 +90,62 @@
   cursor: pointer;
 }
 
+.styles.proposalsContainer {
+  flex-grow: 1;
+}
+
 .proposalsList {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   row-gap: .5em;
+  column-gap: .5em;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .proposal {
   background-color: white;
   color: #212121;
-  padding: 1em;
   border-radius: 4px;
+  overflow: hidden;
+  width: 300px;
+}
+
+.proposal > .header {
+  background-color: rgb(204, 204, 204);
+  padding: .5em;
+  text-align: center;
+}
+
+.proposal > .header.passed {
+  background-color: rgb(97, 185, 97);
+  color: white;
+}
+
+.proposal > .header.declined {
+  background-color: rgb(226, 50, 50);
+  color: white;
+}
+
+.proposal > .header.active {
+  background-color: #ff7663;
+  color: white;
+}
+
+.proposal > .content{
   display: flex;
   flex-direction: column;
-  row-gap: .25em;
+  row-gap: .5em;
+  padding: 1em;
+  color: #212121;
 }
 
 .proposal .votes {
   display: flex;
-  flex-direction: row;
-  column-gap: 1em;
+  /* flex-direction: row; */
+  flex-direction: column;
+  /* column-gap: 1em; */
 }
 
 .proposal .votes > * {
@@ -124,13 +160,21 @@
   color: red;
 }
 
+.proposal > .content > .section {
+  
+}
+
 .proposalOptions {
   display: flex;
   flex-direction: row;
   column-gap: .5em;
-  align-items: center;
+  justify-content: center;
 }
 
-.proposal .button {
+.yay {
+  background-color: green;
+}
 
+.nay {
+  background-color: rgb(184, 0, 0);
 }

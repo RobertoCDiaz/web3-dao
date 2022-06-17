@@ -25,4 +25,11 @@ contract FakeNFTMarketplace {
     function available(uint256 tokenId) external view returns(bool) {
         return tokens[tokenId] == address(0);
     }
+
+    /**
+        @dev Withdraws the Ether collected in the fake marketplace and sends it to an address.
+     */
+    function withdrawEther(address user) external {
+        payable(user).transfer(address(this).balance);
+    }
 }

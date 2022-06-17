@@ -16,11 +16,10 @@ async function main() {
     const daoContract = await (await ethers.getContractFactory("DAO")).deploy(
         NFT_CONTRACT_ADDRESS,
         marketPlaceAddress,
-        // uncomment this to actually give ETH to the DAO's treasury
-        // {
-        //     // ether to transfer to the DAO treasury
-        //     value: ethers.utils.parseEther("0.1"),
-        // }
+        {
+            // ether to transfer to the DAO treasury
+            value: ethers.utils.parseEther("0.1"),
+        }
     );
         
     console.log("DAO Contract Address: ", daoContract.address);

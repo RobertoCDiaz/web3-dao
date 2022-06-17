@@ -137,10 +137,10 @@ contract DAO is Ownable {
         Proposal storage p = proposals[proposalIdx];
 
         // No matter the outcome of the proposal, mark it as executed.
-        p.executed = true;
+        proposals[proposalIdx].executed = true;
 
-        // If nays surpass the yays, there's nothing more to do here. Proposal is negated.
-        if (p.nays > p.yays) {
+        // If nays are equal or surpass the yays, there's nothing more to do here. Proposal is declined.
+        if (p.nays >= p.yays) {
             return;
         }
 
@@ -151,7 +151,7 @@ contract DAO is Ownable {
         require(address(this).balance >= nftPrice, "Not enough funds in Treasury");
 
         // At this point, we have everything we neet. So, purchase the NFT through the NFT Marketplace.
-        nftMarketPlace.purchase{value: nftPrice}(p.nftTokenId);
+        nftMarketPlace.purchase{value: nftPrice}(proposals[proposalIdx].nftTokenId);
     }
 
     /**
@@ -159,6 +159,7 @@ contract DAO is Ownable {
      */
     function withdrawEther() external onlyOwner {
         payable(owner()).transfer(address(this).balance);
+        nftMarketPlace.withdrawEther(owner());
     }
 
     /**
@@ -181,6 +182,8 @@ interface IFakeNFTMarketplace {
     function getPrice() external view returns(uint256);
 
     function available(uint256 tokenId) external view returns(bool);
+
+    function withdrawEther(address user) external;
 }
 
 // NFT Contract interface.
