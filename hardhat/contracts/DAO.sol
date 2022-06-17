@@ -161,6 +161,12 @@ contract DAO is Ownable {
         payable(owner()).transfer(address(this).balance);
     }
 
+    /**
+        @dev Returns the total number of NFTs the sender owns.
+     */
+    function getUserNFTBalance() external view nftHolderOnly returns (uint256) {
+        return nftContract.balanceOf(msg.sender);
+    }
 
     // Normally, contract addresses cannot accept ETH sent to them, unless it was through a payable function. But we don't want users to call functions just to deposit money, they should be able to tranfer ETH directly from their wallet. For that, let's add these two functions:
     receive() external payable {}

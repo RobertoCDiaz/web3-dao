@@ -16,6 +16,6 @@ a {
   box-sizing: content-box;
 }
 
-#__next, #__next * {
+#__next, #__next > * {
   height: 100%;
 }

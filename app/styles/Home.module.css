@@ -1,0 +1,68 @@
+.app {
+  background-color: #212121;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.infoButton {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  row-gap: .5em;
+}
+
+.button {
+  padding: .5em;
+  background-color: #ff7663;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.highlightText {
+  color: #ff7663;
+  font-weight: bold;
+}
+
+.clickableText {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.content {
+  flex-grow: 3;
+  color: white;
+  padding: 3em;
+  display: flex;
+  flex-direction: column;
+}
+
+.info {
+  margin: 2em 0;
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.5em;
+}
+
+.proposalsContainer {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  row-gap: .5em;
+}
+
+.img {
+  flex-grow: 0;
+  background-color: white;
+}
+
+.userPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
