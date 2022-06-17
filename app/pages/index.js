@@ -139,18 +139,38 @@ export default function Home() {
   }, [isWalletConnected]);
 
   const Proposal = (proposal) => {
+    const deadlineDate = new Date(proposal.deadline.toNumber() * 1000)
+    const deadlineExpired =  deadlineDate < Date.now();
+
     return <div className={styles.proposal}>
       <h3>Token #{ proposal.nftTokenId.toNumber() }</h3>
-      <p>Votes</p>
-      <div className={styles.votes}>
-        <p className={styles.yays}>{ proposal.yays.toNumber() }</p>
-        <p className={styles.nays}>{ proposal.nays.toNumber() }</p>
+      
+      <div className={styles.section}>
+        <p>Votes</p>
+        <div className={styles.votes}>
+          <p className={styles.yays}>{ proposal.yays.toNumber() }</p>
+          <p className={styles.nays}>{ proposal.nays.toNumber() }</p>
+        </div>
       </div>
-      {/* if proposal is active, show votes options */}
-      {/* if already executed, show the outcome */}
-      { proposal.executed && <div>
-        <p>This proposal was { proposal.yays > proposal.nays ? "passed" : "declined" }</p>
-      </div> }
+
+      <div className={styles.section}>
+        {/* show vote buttons if deadline has not expired yet */}
+        { true && <div className={styles.proposalOptions}>
+          <div className={styles.button}>Vote YAY</div>
+          <div className={styles.button}>Vote NAY</div>
+        </div> }
+
+        {/* If deadline has expired but proposal has not been executed yet, show a button to execute */}
+        { deadlineExpired && !proposal.executed && <div className={styles.proposalOptions}>
+          <div className={styles.button}>Create proposal</div>
+        </div> }
+
+        {/* if proposal is active, show votes options */}
+        {/* if already executed, show the outcome */}
+        { proposal.executed && <div>
+          <p>This proposal was { proposal.yays > proposal.nays ? "passed" : "declined" }</p>
+        </div> }
+      </div>
     </div>
   }
 

@@ -101,6 +101,9 @@
   color: #212121;
   padding: 1em;
   border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  row-gap: .25em;
 }
 
 .proposal .votes {
@@ -119,4 +122,15 @@
 
 .proposal .votes .nays {
   color: red;
+}
+
+.proposalOptions {
+  display: flex;
+  flex-direction: row;
+  column-gap: .5em;
+  align-items: center;
+}
+
+.proposal .button {
+
 }
