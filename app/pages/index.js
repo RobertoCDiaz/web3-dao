@@ -17,10 +17,39 @@ export default function Home() {
   const [proposalsCount, setProposalsCount] = useState(0);
   // tells us if the current connected address is the owner of the DAO contract
   const [isOwner, setIsOwner] = useState(false);
+  // whether a transaction is currently being mined or not
+  const [isLoading, setIsLoading] = useState(false);
+  // flag state variable that tells us if we should show the `Create Proposal` form.
+  const [isCreatingProposal, setIsCreatingProposal] = useState(false);
+  // list of the DAO's proposals 
+  const [proposals, setProposals] = useState([]);
+
+  const tokenIdInput = useRef();
 
   const [isWalletConnected, setIsWalletConnected] = useState(false); 
 
   const web3Modal = useRef();
+
+  /**
+   * Calls a contract instance to create a new proposal in the DAO using
+   * the value set in the `tokenIdInput` ref.
+   */
+  const createProposal = async () => {
+    const tokenId = parseInt(tokenIdInput.current.value);
+
+    const contract = await getContractInstance(web3Modal.current, true);
+    
+    const tx = await contract.createProposal(tokenId);
+
+    setIsLoading(true);
+    await tx.wait();
+    setIsLoading(false);
+    setIsCreatingProposal(false);
+
+    alert("Proposal successfully created!")
+
+    await updateAppState();
+  }
 
   /**
    * Withdraws all the Ether the DAO's treasury has and transfers it to the owner.
@@ -60,7 +89,15 @@ export default function Home() {
     const providerContract = await getContractInstance(web3Modal.current);
     
     setTreasuryBalance(utils.formatEther(await provider.getBalance(DAO_CONTRACT_ADDRESS)));
-    setProposalsCount((await providerContract.numProposals()).toString());
+    const fetchedProposalsCount = (await providerContract.numProposals()).toNumber();
+    setProposalsCount(fetchedProposalsCount);
+
+    // fetch proposals
+    let fetchedProposals = [];
+    for (let i = 0; i < fetchedProposalsCount; ++i) {
+      fetchedProposals.push(await providerContract.proposals(i));
+    }
+    setProposals(fetchedProposals);
     
     if (!firstSet)
       return;
@@ -101,6 +138,57 @@ export default function Home() {
     initialProcessing();
   }, [isWalletConnected]);
 
+  const Proposal = (proposal) => {
+    return <div className={styles.proposal}>
+      <h3>Token #{ proposal.nftTokenId.toNumber() }</h3>
+      <p>Votes</p>
+      <div className={styles.votes}>
+        <p className={styles.yays}>{ proposal.yays.toNumber() }</p>
+        <p className={styles.nays}>{ proposal.nays.toNumber() }</p>
+      </div>
+      {/* if proposal is active, show votes options */}
+      {/* if already executed, show the outcome */}
+      { proposal.executed && <div>
+        <p>This proposal was { proposal.yays > proposal.nays ? "passed" : "declined" }</p>
+      </div> }
+    </div>
+  }
+
+  /**
+   * A component that displays all the proposals in the DAO.
+   * 
+   * @returns ProposalsList component.
+   */
+  const ProposalsList = () => {
+    return <div className={styles.proposalsList}>
+      { proposals.map(p => Proposal(p)) }
+    </div>;
+  }
+
+  /**
+   * Returns a simple form to be able to create a new proposal in the DAO.
+   * 
+   * @returns CreateProposalForm component.
+   */
+  const CreateProposalForm = () => {
+    if (isLoading) {
+      return <p>Loading...</p>
+    }
+
+    const cancelCreation = () => {
+      setIsCreatingProposal(false);
+    }
+
+    return <div className={styles.createProposalForm}>
+      <h3>Create new proposal:</h3>
+      <input type="number" ref={tokenIdInput} placeholder="Fake NFT Id"/>
+      <div className={styles.options}>
+        { InfoButton("Create", createProposal, null, { alignSelf: 'flex-start' }) }
+        <div onClick={cancelCreation} className={styles.option}>Cancel</div>
+      </div>
+    </div>
+  }
+
   /**
    * A helper component that renders a custom button that can also show additional information
    * 
@@ -110,10 +198,10 @@ export default function Home() {
    * @param {object} buttonStyles - Additional CSS styles to apply to the button
    * @returns InfoButton Component
    */
-  const InfoButton = (buttonText, onClickAction, info = null, buttonStyles) => {
+  const InfoButton = (buttonText, onClickAction = () => {}, info = null, buttonStyles) => {
     return <div className={styles.infoButton}>
       { info && <div className="info">{ info }</div> }
-      <div className={styles.button} style={buttonStyles}>{ buttonText }</div>
+      <div onClick={onClickAction} className={styles.button} style={buttonStyles}>{ buttonText }</div>
     </div>
   }
 
@@ -143,6 +231,13 @@ export default function Home() {
     </div>);
   }
 
+  /**
+   * OnClick function for the `Create Proposal` button.
+   */
+  const handleCreateProposalOnClick = () => {
+    setIsCreatingProposal(true);
+  }
+
   return (
     <div>
       <Head>
@@ -159,13 +254,13 @@ export default function Home() {
             <p>There are currently a total of <span className={styles.highlightText}>{ proposalsCount }</span> proposals</p>
           </div>
           <div className={styles.proposalsContainer}>
+            {/* <div style={{ display: 'flex', flexDirection: 'row', columnGap: '.5em', alignItems: 'center' }}> */}
             <h2>Proposals</h2>
-            { InfoButton("Create a new proposal", null, null, { alignSelf: "flex-start" }) }
-            <div className={styles.proposalsList}>
-              <div className={styles.proposal}>
-
-              </div>
-            </div>
+            {/* </div> */}
+            { !isCreatingProposal && InfoButton("Create proposal", handleCreateProposalOnClick, null, { alignSelf: "flex-start" }) }
+            { isCreatingProposal && <CreateProposalForm />}
+            { !isCreatingProposal && <ProposalsList />}
+            
           </div>
           <UserPanel />
         </div>

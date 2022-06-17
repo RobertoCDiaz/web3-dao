@@ -66,3 +66,57 @@
   justify-content: center;
   align-items: center;
 }
+
+.createProposalForm {
+  display: flex;
+  flex-direction: column;
+  row-gap: 0.5em;
+  align-items: flex-start;
+}
+
+.createProposalForm input {
+  padding: .5em;
+}
+
+.createProposalForm .options {
+  display: flex;
+  flex-direction: row;
+  column-gap: 1em;
+  align-items: center;
+}
+
+.options .option {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.proposalsList {
+  display: flex;
+  flex-direction: column;
+  row-gap: .5em;
+}
+
+.proposal {
+  background-color: white;
+  color: #212121;
+  padding: 1em;
+  border-radius: 4px;
+}
+
+.proposal .votes {
+  display: flex;
+  flex-direction: row;
+  column-gap: 1em;
+}
+
+.proposal .votes > * {
+  font-weight: bold;
+}
+
+.proposal .votes .yays {
+  color: green;
+}
+
+.proposal .votes .nays {
+  color: red;
+}
