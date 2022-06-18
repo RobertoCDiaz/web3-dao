@@ -135,7 +135,6 @@ export default function Home() {
   
       setIsWalletConnected(true);
     } catch(err) {
-      alert("An error ocurred, consult the console of your browser for more information");
       console.error(err);
     }
   }
@@ -148,63 +147,79 @@ export default function Home() {
    * @param {boolean} firstSet - Whether we are setting the state of the app for the first time.
    */
   const updateAppState = async (firstSet = false) => {
-    // what to always update
-    const provider = await getProviderOrSigner(web3Modal.current);
-    const providerContract = await getContractInstance(web3Modal.current);
-    
-    setTreasuryBalance(utils.formatEther(await provider.getBalance(DAO_CONTRACT_ADDRESS)));
-    const fetchedProposalsCount = (await providerContract.numProposals()).toNumber();
-    setProposalsCount(fetchedProposalsCount);
+    try {
+      const provider = await getProviderOrSigner(web3Modal.current);
+      const providerContract = await getContractInstance(web3Modal.current);
+      
+      // fetch state
+      const fetchedTreasuryBalance = utils.formatEther(await provider.getBalance(DAO_CONTRACT_ADDRESS));
+      const fetchedProposalsCount = (await providerContract.numProposals()).toNumber();
 
-    // fetch proposals
-    let fetchedProposals = [];
-    for (let i = 0; i < fetchedProposalsCount; ++i) {
-      fetchedProposals.push(await providerContract.proposals(i));
+      // fetch proposals
+      // let fetchedProposals = [];
+      // for (let i = 0; i < fetchedProposalsCount; ++i) {
+      //   const p = await providerContract.proposals(i);
+      //   fetchedProposals.push(p);
+      // }
+      let fetchedProposals = {};
+      for (let i = 0; i < fetchedProposalsCount; ++i) {
+        const p = await providerContract.proposals(i);
+        fetchedProposals[i] = p;
+      }
+
+      console.log(fetchedProposals);
+
+      setTreasuryBalance(fetchedTreasuryBalance);
+      setProposalsCount(fetchedProposalsCount);
+      setProposals(fetchedProposals);
+      
+      if (!firstSet)
+        return;
+      
+      const signer = await getProviderOrSigner(web3Modal.current, true);
+      const signerContract = await getContractInstance(web3Modal.current, true);
+      
+      const fetchedUserBalance = (await signerContract.getUserNFTBalance()).toString();
+      // set how many nfts the user has
+      setUserBalance(fetchedUserBalance);
+
+      // sets user's address
+      const userAddress = await signer.getAddress();
+      setUserAddress(userAddress);
+
+      // checks if user is owner
+      const owner = await providerContract.owner();
+      if (userAddress.toLowerCase() == owner.toLowerCase())
+        setIsOwner(true);
+    } catch(err) {
+      console.error(err);
     }
-    setProposals(fetchedProposals);
-    
-    if (!firstSet)
-      return;
-    
-    const signer = await getProviderOrSigner(web3Modal.current, true);
-    const signerContract = await getContractInstance(web3Modal.current, true);
-    
-    // set how many nfts the user has
-    setUserBalance((await signerContract.getUserNFTBalance()).toString());
-
-    // sets user's address
-    const userAddress = await signer.getAddress();
-    setUserAddress(userAddress);
-
-    // checks if user is owner
-    const owner = await providerContract.owner();
-    if (userAddress.toLowerCase() == owner.toLowerCase())
-      setIsOwner(true);
   }
 
   /**
    * Basic state variables and objects setup.
    */
   const initialProcessing = async () => {
-    if (!isWalletConnected) {
-      web3Modal.current = new Web3Modal({
-        network: "rinkeby",
-        disableInjectedProvider: false,
-        providerOptions: {},
-      });
-
-      await connectToWallet();
-      await updateAppState(true);
-    }
+    await connectToWallet();
+    await updateAppState(true);
   };
 
   useEffect(() => {
-    initialProcessing();
+    if (!isWalletConnected) {
+      web3Modal.current = new Web3Modal({
+        network: "rinkeby",
+        providerOptions: {},
+        disableInjectedProvider: false,
+      });
 
-    // update app's state every minute
-    setInterval(async () => {
-      await updateAppState();
-    }, 1000 * 60);
+      initialProcessing();
+    } else {
+      // update app's state every minute
+      setInterval(async () => {
+        await updateAppState();
+      }, 1000 * 60);
+    }
+
   }, [isWalletConnected]);
 
   /**
@@ -228,8 +243,6 @@ export default function Home() {
       (executed && passed) ? styles.passed :
       (executed && !passed) ? styles.declined :
       "";
-
-    console.log(`p with tokenid ${tokenId} header styles is ${headerStateStyles}`)
 
     return <div className={styles.proposal} title={deadlineExpired && `This proposal's voting time limit was ${deadlineDate.toLocaleString()}`}>
       <div className={`${styles.header} ${headerStateStyles}`}>
@@ -281,6 +294,10 @@ export default function Home() {
    * @returns ProposalsList component.
    */
   const ProposalsList = () => {
+    // sorts the proposals ids so they are in a descending order by their deadline
+    const sortedProposalsKeys = Object.keys(proposals)
+      .sort((a, b) => proposals[b].deadline.toNumber() > proposals[a].deadline.toNumber() ? 1 : -1);
+
     if (isLoading) {
       return <div>
         Loading...
@@ -293,8 +310,9 @@ export default function Home() {
       </div>
     }
 
+    // use `sortedProposalsKeys` to map them to proposals objects and then render them
     return <div className={styles.proposalsList}>
-      { proposals.map((p, id) => <Proposal key={id} proposalId={id} proposal={p} />) }
+      { sortedProposalsKeys.map(k => proposals[k]).map((p, id) => <Proposal key={id} proposalId={id} proposal={p} />) }
     </div>;
   }
 
@@ -381,25 +399,23 @@ export default function Home() {
 
         <div className={styles.content}>
           <h1>Decentralized Autonomous Organization</h1>
-          <div className={styles.info}>
+          { isWalletConnected && <div className={styles.info}>
             <p>You currently own <span className={styles.highlightText}>{ userBalance }</span> WNC nfts!</p>
             <p>The treasury balance is <span className={styles.highlightText}>{ treasuryBalance } Ether</span></p>
             <p>There are currently a total of <span className={styles.highlightText}>{ proposalsCount }</span> proposals</p>
-          </div>
-          <div className={styles.proposalsContainer}>
-            {/* <div style={{ display: 'flex', flexDirection: 'row', columnGap: '.5em', alignItems: 'center' }}> */}
+          </div>}
+          { isWalletConnected && <div className={styles.proposalsContainer}>
             <h2>Proposals</h2>
-            {/* </div> */}
             { isCreatingProposal && <CreateProposalForm />}
             { !isCreatingProposal && <ProposalsList />}
             { !isCreatingProposal && !isLoading && InfoButton("Create proposal", handleCreateProposalOnClick, null, { alignSelf: "flex-start" }) }
             
-          </div>
+          </div>}
           <UserPanel />
         </div>
-        <img className={styles.img} src="https://raw.githubusercontent.com/RobertoCDiaz/nft-collection/main/app/public/nfts/0.svg" alt="NFT logo" />
-
-
+        <div className={styles.img}>
+          <img className={styles.img} src="https://raw.githubusercontent.com/RobertoCDiaz/nft-collection/main/app/public/nfts/0.svg" alt="NFT logo" />
+        </div>
       </div>
     </div>
   );

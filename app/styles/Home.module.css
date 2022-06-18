@@ -1,10 +1,12 @@
 .app {
   background-color: #212121;
   height: 100%;
-  display: flex;
+  /* display: flex;
   flex-direction: row;
   justify-content: center;
-  align-items: stretch;
+  align-items: stretch; */
+  display: grid;
+  grid-template-columns: 3fr 2fr;
 }
 
 .infoButton {
@@ -58,6 +60,14 @@
 .img {
   flex-grow: 0;
   background-color: white;
+  padding: 0 5%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.img img {
+  width: 80%;
 }
 
 .userPanel {
@@ -65,6 +75,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  margin-top: 1em;
 }
 
 .createProposalForm {
@@ -109,7 +120,8 @@
   color: #212121;
   border-radius: 4px;
   overflow: hidden;
-  width: 300px;
+  width: 32%;
+  /* min-width: 2fr; */
 }
 
 .proposal > .header {
