@@ -172,10 +172,6 @@
   color: red;
 }
 
-.proposal > .content > .section {
-  
-}
-
 .proposalOptions {
   display: flex;
   flex-direction: row;
